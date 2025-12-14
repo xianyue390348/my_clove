@@ -28,7 +28,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
-import { useIsMobile } from '@/hooks/use-mobile'
 
 export function Proxies() {
     const [proxies, setProxies] = useState<ProxyResponse[]>([])
@@ -38,7 +37,6 @@ export function Proxies() {
     const [proxyToDelete, setProxyToDelete] = useState<ProxyResponse | null>(null)
     const [newProxyUrl, setNewProxyUrl] = useState('')
     const [addingProxy, setAddingProxy] = useState(false)
-    const isMobile = useIsMobile()
 
     const loadProxies = async () => {
         try {
