@@ -32,11 +32,11 @@ class ClaudeWebClient:
         self.endpoint = settings.claude_ai_url.encoded_string().rstrip("/")
 
     async def initialize(self):
-        """Initialize the client session."""
+        """Initialize the client session with account-specific proxy."""
         self.session = create_session(
             timeout=settings.request_timeout,
             impersonate="chrome",
-            proxy=settings.proxy_url,
+            account_uuid=self.account.organization_uuid,
             follow_redirects=False,
         )
 

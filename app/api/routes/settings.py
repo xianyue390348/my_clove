@@ -15,6 +15,7 @@ class SettingsRead(BaseModel):
     admin_api_keys: List[str]
 
     proxy_url: str | None
+    proxy_pool: List[str]
 
     claude_ai_url: HttpUrl
     claude_api_baseurl: HttpUrl
@@ -41,6 +42,7 @@ class SettingsUpdate(BaseModel):
     admin_api_keys: List[str] | None = None
 
     proxy_url: str | None = None
+    proxy_pool: List[str] | None = None
 
     claude_ai_url: HttpUrl | None = None
     claude_api_baseurl: HttpUrl | None = None

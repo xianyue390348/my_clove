@@ -530,15 +530,36 @@ if HTTPX_AVAILABLE:
 def create_session(
     timeout: int = settings.request_timeout,
     impersonate: str = "chrome",
-    proxy: Optional[str] = settings.proxy_url,
+    proxy: Optional[str] = None,
     follow_redirects: bool = True,
+    account_uuid: Optional[str] = None,
 ) -> AsyncSession:
     """Create an async session using the available HTTP client.
 
     Prefers rnet if available, then curl_cffi, falls back to httpx.
+
+    Args:
+        timeout: Request timeout in seconds
+        impersonate: Browser to impersonate
+        proxy: Explicit proxy URL. If None, will be determined based on account_uuid or global settings
+        follow_redirects: Whether to follow redirects
+        account_uuid: Account UUID for proxy pool assignment. If provided and proxy is None,
+                     uses account-specific proxy from pool
+
+    Returns:
+        AsyncSession instance
     """
+    # Determine proxy to use
+    if proxy is None:
+        if account_uuid:
+            # Import here to avoid circular dependency
+            from app.services.account import account_manager
+            proxy = account_manager.get_proxy_for_account(account_uuid)
+        else:
+            proxy = settings.proxy_url
+
     if RNET_AVAILABLE:
-        logger.debug("Using rnet as HTTP client")
+        logger.debug(f"Using rnet as HTTP client{' with proxy' if proxy else ''}")
         return RnetAsyncSession(
             timeout=timeout,
             impersonate=impersonate,
@@ -546,7 +567,7 @@ def create_session(
             follow_redirects=follow_redirects,
         )
     elif CURL_CFFI_AVAILABLE:
-        logger.debug("Using curl_cffi as HTTP client")
+        logger.debug(f"Using curl_cffi as HTTP client{' with proxy' if proxy else ''}")
         return CurlAsyncSessionWrapper(
             timeout=timeout,
             impersonate=impersonate,
@@ -554,7 +575,7 @@ def create_session(
             follow_redirects=follow_redirects,
         )
     else:
-        logger.debug("Using httpx as HTTP client (rnet and curl_cffi not available)")
+        logger.debug(f"Using httpx as HTTP client (rnet and curl_cffi not available){' with proxy' if proxy else ''}")
         return HttpxAsyncSession(
             timeout=timeout,
             impersonate=impersonate,

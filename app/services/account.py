@@ -292,6 +292,43 @@ class AccountManager:
         
         return None
 
+    def get_proxy_for_account(self, organization_uuid: str) -> Optional[str]:
+        """Get assigned proxy for an account using modulo-based allocation.
+
+        Uses stable ordering by organization_uuid to ensure consistent proxy assignment.
+        Falls back to global proxy_url if no proxy pool is configured.
+
+        Args:
+            organization_uuid: The organization UUID of the account
+
+        Returns:
+            Proxy URL or None if no proxy configured
+        """
+        if not settings.proxy_pool:
+            return settings.proxy_url  # Fallback to global proxy
+
+        # Get account index (stable ordering by organization_uuid)
+        account_list = sorted(self._accounts.keys())
+        try:
+            account_index = account_list.index(organization_uuid)
+        except ValueError:
+            logger.warning(
+                f"Account {organization_uuid[:8]}... not found in account list, "
+                "falling back to global proxy"
+            )
+            return settings.proxy_url
+
+        # Modulo assignment
+        proxy_index = account_index % len(settings.proxy_pool)
+        assigned_proxy = settings.proxy_pool[proxy_index]
+
+        logger.debug(
+            f"Assigned proxy {proxy_index} to account {organization_uuid[:8]}... "
+            f"(account_index={account_index}, pool_size={len(settings.proxy_pool)})"
+        )
+
+        return assigned_proxy
+
     async def release_session(self, session_id: str) -> None:
         """Release a session's account assignment."""
         if session_id in self._session_accounts:

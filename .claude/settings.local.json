@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/tasks)"
+      "Bash(/tasks)",
+      "Bash(python -m py_compile app/core/config.py app/services/account.py app/core/http_client.py app/core/external/claude_client.py app/api/routes/proxies.py app/api/main.py app/api/routes/settings.py)"
     ]
   }
 }
