@@ -221,6 +221,10 @@ export function Accounts() {
                         <CardContent className='pt-0 space-y-3'>
                             <div className='space-y-2 text-sm'>
                                 <div className='flex justify-between'>
+                                    <span className='text-muted-foreground'>分配代理</span>
+                                    <span className='font-mono text-xs'>{account.assigned_proxy || '-'}</span>
+                                </div>
+                                <div className='flex justify-between'>
                                     <span className='text-muted-foreground'>最后使用</span>
                                     <span>{new Date(account.last_used).toLocaleString('zh-CN')}</span>
                                 </div>
@@ -293,6 +297,9 @@ export function Accounts() {
                                         <TableHead>
                                             <Skeleton className='h-4 w-32' />
                                         </TableHead>
+                                        <TableHead>
+                                            <Skeleton className='h-4 w-32' />
+                                        </TableHead>
                                         <TableHead className='text-right'>
                                             <Skeleton className='h-4 w-16 ml-auto' />
                                         </TableHead>
@@ -318,6 +325,9 @@ export function Accounts() {
                                             </TableCell>
                                             <TableCell>
                                                 <Skeleton className='h-6 w-16 rounded-full' />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Skeleton className='h-4 w-48' />
                                             </TableCell>
                                             <TableCell>
                                                 <Skeleton className='h-4 w-32' />
@@ -422,6 +432,7 @@ export function Accounts() {
                                     <TableHead>认证方式</TableHead>
                                     <TableHead>状态</TableHead>
                                     <TableHead>账户类型</TableHead>
+                                    <TableHead>分配代理</TableHead>
                                     <TableHead>最后使用</TableHead>
                                     <TableHead>重置时间</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
@@ -445,6 +456,9 @@ export function Accounts() {
                                         </TableCell>
                                         <TableCell>
                                             <AccountTypeBadge account={account} />
+                                        </TableCell>
+                                        <TableCell className='text-sm font-mono'>
+                                            {account.assigned_proxy || '-'}
                                         </TableCell>
                                         <TableCell className='text-sm'>
                                             {new Date(account.last_used).toLocaleString('zh-CN')}

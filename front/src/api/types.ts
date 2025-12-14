@@ -37,6 +37,7 @@ export interface AccountResponse {
   has_oauth: boolean;
   last_used: string;
   resets_at?: string;
+  assigned_proxy?: string; // Assigned proxy (masked)
 }
 
 // 设置相关类型
