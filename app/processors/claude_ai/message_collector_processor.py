@@ -97,13 +97,32 @@ class MessageCollectorProcessor(BaseProcessor):
                 block = context.collected_message.content[event.root.index]
                 if isinstance(block, (ToolUseContent, ServerToolUseContent)):
                     if hasattr(block, "input_json") and block.input_json:
-                        block.input = json5.loads(block.input_json)
+                        try:
+                            block.input = json5.loads(block.input_json)
+                        except (ValueError, json5.JSON5DecodeError) as e:
+                            logger.warning(f"Failed to parse input_json with json5: {e}, falling back to json")
+                            try:
+                                import json
+                                block.input = json.loads(block.input_json)
+                            except json.JSONDecodeError as je:
+                                logger.error(f"Failed to parse input_json with both json5 and json: {je}")
+                                block.input = {"error": "Failed to parse input", "raw": block.input_json}
                         del block.input_json
                 if isinstance(block, ToolResultContent):
                     if hasattr(block, "content_json") and block.content_json:
+                        try:
+                            content = json5.loads(block.content_json)
+                        except (ValueError, json5.JSON5DecodeError) as e:
+                            logger.warning(f"Failed to parse content_json with json5: {e}, falling back to json")
+                            try:
+                                import json
+                                content = json.loads(block.content_json)
+                            except json.JSONDecodeError as je:
+                                logger.error(f"Failed to parse content_json with both json5 and json: {je}")
+                                content = {"error": "Failed to parse content", "raw": block.content_json}
                         block = ToolResultContent(
                             **block.model_dump(exclude={"content"}),
-                            content=json5.loads(block.content_json),
+                            content=content,
                         )
                         del block.content_json
                         context.collected_message.content[event.root.index] = block
