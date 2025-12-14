@@ -380,7 +380,9 @@ export function Accounts() {
             <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
                 <div>
                     <h1 className='text-3xl font-bold tracking-tight pb-1'>账户管理</h1>
-                    <p className='text-muted-foreground'>管理您的 Claude 账户</p>
+                    <p className='text-muted-foreground'>
+                        管理您的 Claude 账户 · 共 {accounts.length} 个账户
+                    </p>
                 </div>
                 <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
                     <Button onClick={() => setOauthModalOpen(true)} variant='outline' className='w-full sm:w-auto'>
