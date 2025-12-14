@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Settings, Users, Home, LogOut } from 'lucide-react'
+import { Settings, Users, Home, LogOut, Server } from 'lucide-react'
 import {
     Sidebar,
     SidebarContent,
@@ -20,6 +20,7 @@ export function Layout() {
     const navigation = [
         { name: '仪表板', href: '/', icon: Home },
         { name: '账户管理', href: '/accounts', icon: Users },
+        { name: '代理池', href: '/proxies', icon: Server },
         { name: '应用设置', href: '/settings', icon: Settings },
     ]
 

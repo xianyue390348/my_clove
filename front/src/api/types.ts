@@ -40,10 +40,22 @@ export interface AccountResponse {
 }
 
 // 设置相关类型
+// 代理相关类型
+export interface ProxyCreate {
+  url: string;
+}
+
+export interface ProxyResponse {
+  index: number;
+  url: string;
+  masked_url: string;
+}
+
 export interface SettingsRead {
   api_keys: string[];
   admin_api_keys: string[];
   proxy_url?: string | null;
+  proxy_pool: string[];
   claude_ai_url: string;
   claude_api_baseurl: string;
   custom_prompt?: string | null;
@@ -63,6 +75,7 @@ export interface SettingsUpdate {
   api_keys?: string[];
   admin_api_keys?: string[];
   proxy_url?: string | null;
+  proxy_pool?: string[];
   claude_ai_url?: string;
   claude_api_baseurl?: string;
   custom_prompt?: string | null;

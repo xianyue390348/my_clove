@@ -8,6 +8,8 @@ import type {
     SettingsRead,
     SettingsUpdate,
     StatisticsResponse,
+    ProxyCreate,
+    ProxyResponse,
 } from './types'
 
 const api = axios.create({
@@ -74,4 +76,11 @@ export const healthApi = {
 // 统计信息 API
 export const statisticsApi = {
     get: () => api.get<StatisticsResponse>('/api/admin/statistics'),
+}
+
+// 代理池相关 API
+export const proxiesApi = {
+    list: () => api.get<ProxyResponse[]>('/api/admin/proxies'),
+    create: (proxy: ProxyCreate) => api.post<ProxyResponse>('/api/admin/proxies', proxy),
+    delete: (index: number) => api.delete(`/api/admin/proxies/${index}`),
 }
