@@ -137,6 +137,13 @@ class Settings(BaseSettings):
         description="Comma-separated list of Claude.ai cookies",
     )
 
+    # Proxy Pool
+    proxy_pool: List[str] | str = Field(
+        default_factory=list,
+        env="PROXY_POOL",
+        description="Comma-separated list of SOCKS5 proxy URLs for proxy pool",
+    )
+
     # Content processing
     custom_prompt: Optional[str] = Field(default=None, env="CUSTOM_PROMPT")
     use_real_roles: bool = Field(default=True, env="USE_REAL_ROLES")
@@ -151,7 +158,7 @@ class Settings(BaseSettings):
     )
 
     # Request settings
-    request_timeout: int = Field(default=60, env="REQUEST_TIMEOUT")
+    request_timeout: int = Field(default=300, env="REQUEST_TIMEOUT")
     request_retries: int = Field(default=3, env="REQUEST_RETRIES")
     request_retry_interval: int = Field(default=1, env="REQUEST_RETRY_INTERVAL")
 
@@ -260,7 +267,7 @@ class Settings(BaseSettings):
     )
 
     @field_validator(
-        "api_keys", "admin_api_keys", "cookies", "max_models", "pad_tokens"
+        "api_keys", "admin_api_keys", "cookies", "max_models", "pad_tokens", "proxy_pool"
     )
     def parse_comma_separated(cls, v: str | List[str]) -> List[str]:
         """Parse comma-separated string."""
