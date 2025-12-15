@@ -212,3 +212,4 @@ __marimo__/
 
 # Built frontend static files
 app/static/
+.temp_analysis
