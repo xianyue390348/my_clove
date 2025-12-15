@@ -34,5 +34,10 @@
       "streamingError": "流式传输中收到错误：{error_type} - {error_message}",
       "noMessage": "响应中未收到消息。"
     }
+  },
+  "network": {
+    "connectionError": "访问 {url} 时发生网络连接错误：{error_details}",
+    "timeoutError": "访问 {url} 时发生网络超时（{timeout_type}）。请检查您的网络连接后重试。",
+    "sslError": "访问 {url} 时发生 SSL/TLS 连接错误：{ssl_error}"
   }
 }

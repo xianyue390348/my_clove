@@ -23,6 +23,7 @@ from app.processors.claude_ai.tool_result_processor import ToolResultProcessor
 from app.processors.claude_ai.tool_call_event_processor import ToolCallEventProcessor
 from app.processors.claude_ai.stop_sequences_processor import StopSequencesProcessor
 from app.processors.claude_ai.model_injector_processor import ModelInjectorProcessor
+from app.utils.network_error_handler import convert_network_exception
 
 
 class ClaudeAIPipeline(ProcessingPipeline):
@@ -73,7 +74,25 @@ class ClaudeAIPipeline(ProcessingPipeline):
         try:
             return await super().process(context)
         except Exception as e:
+            # Clean up session on any error
             if context.claude_session:
                 await session_manager.remove_session(context.claude_session.session_id)
+
+            # Convert network errors to AppError
+            exc_type = type(e).__name__
+            if exc_type in ["ConnectionError", "BodyError", "TimeoutError"] or "wreq::Error" in str(e):
+                # Determine URL from context
+                url = None
+                if context.messages_api_request:
+                    url = "https://api.anthropic.com/v1/messages"
+                elif context.claude_session:
+                    url = "https://claude.ai/api/..."
+
+                # Convert to AppError
+                app_error = convert_network_exception(e, url=url, operation="pipeline")
+                logger.error(f"Network error in pipeline: {app_error}")
+                raise app_error
+
+            # Log and re-raise other exceptions
             logger.error(f"Pipeline processing failed: {e}")
             raise e

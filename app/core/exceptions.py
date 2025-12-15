@@ -273,3 +273,66 @@ class NoMessageError(AppError):
             context=context,
             retryable=True,
         )
+
+
+class NetworkConnectionError(AppError):
+    def __init__(
+        self,
+        url: str,
+        error_details: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        _context = context.copy() if context else {}
+        _context.update({
+            "url": url,
+            "error_details": error_details,
+        })
+        super().__init__(
+            error_code=503600,
+            message_key="network.connectionError",
+            status_code=503,
+            context=_context,
+            retryable=True,
+        )
+
+
+class NetworkTimeoutError(AppError):
+    def __init__(
+        self,
+        url: str,
+        timeout_type: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        _context = context.copy() if context else {}
+        _context.update({
+            "url": url,
+            "timeout_type": timeout_type,
+        })
+        super().__init__(
+            error_code=503601,
+            message_key="network.timeoutError",
+            status_code=503,
+            context=_context,
+            retryable=True,
+        )
+
+
+class NetworkSSLError(AppError):
+    def __init__(
+        self,
+        url: str,
+        ssl_error: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        _context = context.copy() if context else {}
+        _context.update({
+            "url": url,
+            "ssl_error": ssl_error,
+        })
+        super().__init__(
+            error_code=503602,
+            message_key="network.sslError",
+            status_code=503,
+            context=_context,
+            retryable=True,
+        )
