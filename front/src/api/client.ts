@@ -10,6 +10,7 @@ import type {
     StatisticsResponse,
     ProxyCreate,
     ProxyResponse,
+    ProxyTestResult,
 } from './types'
 
 const api = axios.create({
@@ -83,4 +84,5 @@ export const proxiesApi = {
     list: () => api.get<ProxyResponse[]>('/api/admin/proxies'),
     create: (proxy: ProxyCreate) => api.post<ProxyResponse>('/api/admin/proxies', proxy),
     delete: (index: number) => api.delete(`/api/admin/proxies/${index}`),
+    test: (index: number) => api.post<ProxyTestResult>(`/api/admin/proxies/${index}/test`),
 }

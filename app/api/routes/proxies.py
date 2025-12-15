@@ -1,13 +1,15 @@
 import os
 import json
 import re
-from typing import List
+import time
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from loguru import logger
 
 from app.dependencies.auth import AdminAuthDep
 from app.core.config import settings
+from app.core.http_client import create_session
 
 
 class ProxyCreate(BaseModel):
@@ -33,6 +35,15 @@ class ProxyResponse(BaseModel):
     index: int
     url: str
     masked_url: str = Field(..., description="URL with masked credentials")
+
+
+class ProxyTestResult(BaseModel):
+    """Model for proxy test result."""
+
+    success: bool
+    response_time: Optional[float] = None  # Response time in seconds
+    error: Optional[str] = None
+    status_code: Optional[int] = None
 
 
 router = APIRouter()
@@ -155,3 +166,75 @@ async def delete_proxy(index: int, _: AdminAuthDep):
             )
 
     return {"message": "Proxy deleted successfully", "removed_url": mask_proxy_url(removed_proxy)}
+
+
+@router.post("/{index}/test", response_model=ProxyTestResult)
+async def test_proxy(index: int, _: AdminAuthDep):
+    """Test a proxy by making a request to Google."""
+    if index < 0 or index >= len(settings.proxy_pool):
+        logger.warning(f"Attempted to test non-existent proxy at index {index}")
+        raise HTTPException(status_code=404, detail="Proxy not found")
+
+    proxy_url = settings.proxy_pool[index]
+    masked_url = mask_proxy_url(proxy_url)
+
+    logger.info(f"Testing proxy {index}: {masked_url}")
+
+    start_time = time.time()
+
+    try:
+        # Create session with the specific proxy
+        session = create_session(
+            proxy=proxy_url,
+            timeout=10,  # 10 second timeout for test
+            impersonate="chrome",
+            follow_redirects=True,
+        )
+
+        # Make a test request to Google
+        response = await session.request(
+            method="GET",
+            url="https://www.google.com",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
+
+        response_time = time.time() - start_time
+
+        await session.close()
+
+        if response.status_code == 200:
+            logger.info(f"Proxy {index} test successful: {response_time:.2f}s")
+            return ProxyTestResult(
+                success=True,
+                response_time=round(response_time, 2),
+                status_code=response.status_code
+            )
+        else:
+            logger.warning(f"Proxy {index} returned status {response.status_code}")
+            return ProxyTestResult(
+                success=False,
+                response_time=round(response_time, 2),
+                status_code=response.status_code,
+                error=f"HTTP {response.status_code}"
+            )
+
+    except Exception as e:
+        response_time = time.time() - start_time
+        error_msg = str(e)
+        logger.error(f"Proxy {index} test failed after {response_time:.2f}s: {error_msg}")
+
+        # Simplify error message for display
+        if "TimeoutError" in error_msg or "TimedOut" in error_msg:
+            error_display = "连接超时"
+        elif "ConnectionError" in error_msg or "Connection" in error_msg:
+            error_display = "连接失败"
+        elif "SSL" in error_msg or "TLS" in error_msg:
+            error_display = "SSL/TLS 错误"
+        else:
+            error_display = "请求失败"
+
+        return ProxyTestResult(
+            success=False,
+            response_time=round(response_time, 2) if response_time < 10 else None,
+            error=error_display
+        )

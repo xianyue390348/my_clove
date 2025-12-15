@@ -52,6 +52,13 @@ export interface ProxyResponse {
   masked_url: string;
 }
 
+export interface ProxyTestResult {
+  success: boolean;
+  response_time?: number;
+  error?: string;
+  status_code?: number;
+}
+
 export interface SettingsRead {
   api_keys: string[];
   admin_api_keys: string[];

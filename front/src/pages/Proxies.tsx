@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Server, AlertCircle, Info } from 'lucide-react'
-import type { ProxyResponse } from '../api/types'
+import { Plus, Trash2, Server, AlertCircle, Info, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import type { ProxyResponse, ProxyTestResult } from '../api/types'
 import { proxiesApi } from '../api/client'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +38,8 @@ export function Proxies() {
     const [proxyToDelete, setProxyToDelete] = useState<ProxyResponse | null>(null)
     const [newProxyUrl, setNewProxyUrl] = useState('')
     const [addingProxy, setAddingProxy] = useState(false)
+    const [testingProxy, setTestingProxy] = useState<number | null>(null)
+    const [testResults, setTestResults] = useState<Map<number, ProxyTestResult>>(new Map())
 
     const loadProxies = async () => {
         try {
@@ -104,6 +107,46 @@ export function Proxies() {
         setAddDialogOpen(true)
     }
 
+    const handleTestProxy = async (index: number) => {
+        setTestingProxy(index)
+        try {
+            const response = await proxiesApi.test(index)
+            setTestResults(prev => new Map(prev).set(index, response.data))
+
+            if (response.data.success) {
+                toast.success(`代理测试成功 (${response.data.response_time}s)`)
+            } else {
+                toast.error(`代理测试失败: ${response.data.error}`)
+            }
+        } catch (error) {
+            console.error('Failed to test proxy:', error)
+            toast.error('测试失败')
+        } finally {
+            setTestingProxy(null)
+        }
+    }
+
+    const getTestResultBadge = (index: number) => {
+        const result = testResults.get(index)
+        if (!result) return null
+
+        if (result.success) {
+            return (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    正常 ({result.response_time}s)
+                </Badge>
+            )
+        } else {
+            return (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    {result.error}
+                </Badge>
+            )
+        }
+    }
+
     if (loading) {
         return (
             <div className="container mx-auto p-4 space-y-4">
@@ -162,7 +205,8 @@ export function Proxies() {
                                     <TableRow>
                                         <TableHead className="w-20">索引</TableHead>
                                         <TableHead>代理地址</TableHead>
-                                        <TableHead className="w-24 text-right">操作</TableHead>
+                                        <TableHead className="w-48">测试状态</TableHead>
+                                        <TableHead className="w-40 text-right">操作</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -172,7 +216,28 @@ export function Proxies() {
                                             <TableCell className="font-mono text-sm">
                                                 {proxy.masked_url}
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell>
+                                                {getTestResultBadge(proxy.index)}
+                                            </TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleTestProxy(proxy.index)}
+                                                    disabled={testingProxy === proxy.index}
+                                                >
+                                                    {testingProxy === proxy.index ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                            测试中
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Play className="h-4 w-4 mr-1" />
+                                                            测试
+                                                        </>
+                                                    )}
+                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
