@@ -24,23 +24,35 @@ class ClaudeWebSession:
 
     async def stream(self, response: Response) -> AsyncIterator[str]:
         """Get the SSE stream."""
+        from app.utils.network_error_handler import convert_network_exception
+
         buffer = b""
-        async for chunk in response.aiter_bytes():
-            self.update_activity()
-            buffer += chunk
-            lines = buffer.split(b"\n")
-            buffer = lines[-1]
-            for line in lines[:-1]:
-                yield line.decode("utf-8") + "\n"
+        try:
+            async for chunk in response.aiter_bytes():
+                self.update_activity()
+                buffer += chunk
+                lines = buffer.split(b"\n")
+                buffer = lines[-1]
+                for line in lines[:-1]:
+                    yield line.decode("utf-8") + "\n"
 
-        if buffer:
-            yield buffer.decode("utf-8")
+            if buffer:
+                yield buffer.decode("utf-8")
 
-        logger.debug(f"Stream completed for session {self.session_id}")
-
-        from app.services.session import session_manager
-
-        await session_manager.remove_session(self.session_id)
+            logger.debug(f"Stream completed for session {self.session_id}")
+        except Exception as e:
+            # Convert network errors during streaming
+            exc_type = type(e).__name__
+            if exc_type in ["ConnectionError", "BodyError", "TimeoutError"] or "wreq::Error" in str(e):
+                url = "https://claude.ai/api/..."  # Generic URL for web endpoint
+                app_error = convert_network_exception(e, url=url, operation="streaming")
+                logger.error(f"Network error during stream: {app_error}")
+                raise app_error
+            # Re-raise other exceptions
+            raise
+        finally:
+            from app.services.session import session_manager
+            await session_manager.remove_session(self.session_id)
 
     async def cleanup(self):
         """Cleanup session resources."""
