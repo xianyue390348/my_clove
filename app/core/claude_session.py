@@ -25,6 +25,7 @@ class ClaudeWebSession:
     async def stream(self, response: Response) -> AsyncIterator[str]:
         """Get the SSE stream."""
         from app.utils.network_error_handler import convert_network_exception
+        import json
 
         buffer = b""
         try:
@@ -41,15 +42,37 @@ class ClaudeWebSession:
 
             logger.debug(f"Stream completed for session {self.session_id}")
         except Exception as e:
-            # Convert network errors during streaming
+            # Handle network errors during streaming
             exc_type = type(e).__name__
             if exc_type in ["ConnectionError", "BodyError", "TimeoutError"] or "wreq::Error" in str(e):
-                url = "https://claude.ai/api/..."  # Generic URL for web endpoint
+                # Convert to AppError for logging
+                url = "https://claude.ai/api/..."
                 app_error = convert_network_exception(e, url=url, operation="streaming")
                 logger.error(f"Network error during stream: {app_error}")
-                raise app_error
-            # Re-raise other exceptions
-            raise
+
+                # Send error event to client instead of raising exception
+                # This prevents "response already started" error
+                error_event = {
+                    "type": "error",
+                    "error": {
+                        "type": "network_error",
+                        "message": f"Network error: {app_error.context.get('timeout_type', 'connection')} timeout"
+                    }
+                }
+                yield f"event: error\n"
+                yield f"data: {json.dumps(error_event)}\n\n"
+            else:
+                # For non-network errors, log and send generic error
+                logger.error(f"Unexpected error during stream: {e}")
+                error_event = {
+                    "type": "error",
+                    "error": {
+                        "type": "stream_error",
+                        "message": "An error occurred while streaming the response"
+                    }
+                }
+                yield f"event: error\n"
+                yield f"data: {json.dumps(error_event)}\n\n"
         finally:
             from app.services.session import session_manager
             await session_manager.remove_session(self.session_id)
