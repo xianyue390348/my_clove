@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, Tuple, AsyncIterator
+from datetime import timedelta
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -327,7 +328,7 @@ if RNET_AVAILABLE:
 
             self._client = RnetClient(
                 emulation=rnet_emulation,
-                timeout=timeout,
+                timeout=timedelta(seconds=timeout),
                 proxies=proxies,
                 allow_redirects=follow_redirects,
             )
