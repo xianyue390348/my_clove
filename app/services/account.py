@@ -292,6 +292,122 @@ class AccountManager:
         
         return None
 
+    async def test_account(self, organization_uuid: str) -> Dict:
+        """
+        Test an account to check if its credentials are still valid.
+
+        Args:
+            organization_uuid: The organization UUID of the account to test
+
+        Returns:
+            Dict with test results including success status, messages, and updated account info
+        """
+        if organization_uuid not in self._accounts:
+            return {
+                "success": False,
+                "error": "Account not found",
+            }
+
+        account = self._accounts[organization_uuid]
+        test_results = {
+            "success": True,
+            "cookie_valid": None,
+            "oauth_valid": None,
+            "error": None,
+        }
+
+        logger.info(f"Testing account: {organization_uuid[:8]}... (auth_type: {account.auth_type.value})")
+
+        # Test cookie authentication if available
+        if account.auth_type in [AuthType.COOKIE_ONLY, AuthType.BOTH] and account.cookie_value:
+            try:
+                org_uuid, capabilities = await oauth_authenticator.get_organization_info(
+                    account.cookie_value
+                )
+                
+                if org_uuid:
+                    test_results["cookie_valid"] = True
+                    # Update capabilities if they've changed
+                    if capabilities and capabilities != account.capabilities:
+                        account.capabilities = capabilities
+                        logger.info(f"Updated capabilities for account {organization_uuid[:8]}...")
+                    logger.info(f"Cookie authentication test passed for account {organization_uuid[:8]}...")
+                else:
+                    test_results["cookie_valid"] = False
+                    test_results["success"] = False
+                    test_results["error"] = "Failed to get organization info with cookie"
+                    logger.warning(f"Cookie authentication test failed for account {organization_uuid[:8]}...")
+                    
+            except Exception as e:
+                test_results["cookie_valid"] = False
+                test_results["success"] = False
+                test_results["error"] = f"Cookie test error: {str(e)}"
+                logger.error(f"Cookie authentication test error for account {organization_uuid[:8]}...: {e}")
+
+        # Test OAuth authentication if available
+        if account.auth_type in [AuthType.OAUTH_ONLY, AuthType.BOTH] and account.oauth_token:
+            try:
+                current_timestamp = datetime.now(UTC).timestamp()
+                
+                # Check if token is expired or about to expire
+                if account.oauth_token.expires_at - current_timestamp < 300:
+                    logger.info(f"OAuth token expired or expiring soon for account {organization_uuid[:8]}..., attempting refresh")
+                    refresh_success = await oauth_authenticator.refresh_account_token(account)
+                    
+                    if refresh_success:
+                        test_results["oauth_valid"] = True
+                        logger.info(f"OAuth token refresh successful for account {organization_uuid[:8]}...")
+                    else:
+                        test_results["oauth_valid"] = False
+                        test_results["success"] = False
+                        test_results["error"] = "Failed to refresh OAuth token"
+                        logger.warning(f"OAuth token refresh failed for account {organization_uuid[:8]}...")
+                else:
+                    # Token is still valid
+                    test_results["oauth_valid"] = True
+                    logger.info(f"OAuth token is valid for account {organization_uuid[:8]}...")
+                    
+            except Exception as e:
+                test_results["oauth_valid"] = False
+                test_results["success"] = False
+                test_results["error"] = f"OAuth test error: {str(e)}"
+                logger.error(f"OAuth authentication test error for account {organization_uuid[:8]}...: {e}")
+
+        # Update account status based on test results
+        if test_results["success"]:
+            account.status = AccountStatus.VALID
+            account.resets_at = None
+            logger.info(f"Account {organization_uuid[:8]}... test passed, status set to VALID")
+        else:
+            # Only mark as invalid if all auth methods failed
+            if account.auth_type == AuthType.BOTH:
+                # For BOTH type, only invalid if both methods failed
+                if test_results["cookie_valid"] is False and test_results["oauth_valid"] is False:
+                    account.status = AccountStatus.INVALID
+                    logger.warning(f"Account {organization_uuid[:8]}... test failed, status set to INVALID")
+                elif test_results["cookie_valid"] is False:
+                    # Cookie failed but OAuth passed, downgrade to OAuth only
+                    account.auth_type = AuthType.OAUTH_ONLY
+                    account.cookie_value = None
+                    test_results["success"] = True
+                    test_results["error"] = "Cookie invalid, downgraded to OAuth only"
+                    logger.info(f"Account {organization_uuid[:8]}... downgraded to OAuth only")
+                elif test_results["oauth_valid"] is False:
+                    # OAuth failed but Cookie passed, downgrade to Cookie only
+                    account.auth_type = AuthType.COOKIE_ONLY
+                    account.oauth_token = None
+                    test_results["success"] = True
+                    test_results["error"] = "OAuth invalid, downgraded to Cookie only"
+                    logger.info(f"Account {organization_uuid[:8]}... downgraded to Cookie only")
+            else:
+                account.status = AccountStatus.INVALID
+                logger.warning(f"Account {organization_uuid[:8]}... test failed, status set to INVALID")
+
+        # Save updated account status
+        self.save_accounts()
+
+        return test_results
+
     def get_proxy_for_account(self, organization_uuid: str) -> Optional[str]:
         """Get assigned proxy for an account using modulo-based allocation.
 

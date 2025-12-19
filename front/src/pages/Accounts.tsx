@@ -13,7 +13,9 @@ import {
     ChevronRight,
     KeyRound,
     FileText,
+    TestTube,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { AccountResponse } from '../api/types'
 import { accountsApi } from '../api/client'
 import { AccountModal } from '../components/AccountModal'
@@ -48,6 +50,7 @@ export function Accounts() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [accountToDelete, setAccountToDelete] = useState<string | null>(null)
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+    const [testingAccount, setTestingAccount] = useState<string | null>(null)
     const isMobile = useIsMobile()
 
     const loadAccounts = async () => {
@@ -103,6 +106,30 @@ export function Accounts() {
     const handleBatchModalClose = () => {
         setBatchModalOpen(false)
         loadAccounts()
+    }
+
+    const handleTest = async (organizationUuid: string) => {
+        setTestingAccount(organizationUuid)
+        try {
+            const response = await accountsApi.test(organizationUuid)
+            
+            if (response.data.success) {
+                toast.success('账户测试通过', {
+                    description: '凭证有效，账户状态已更新'
+                })
+            } else {
+                toast.warning('账户测试失败', {
+                    description: response.data.error || '凭证无效或已过期'
+                })
+            }
+            
+            // 刷新账户列表
+            await loadAccounts()
+        } catch (error) {
+            console.error('Failed to test account:', error)
+        } finally {
+            setTestingAccount(null)
+        }
     }
 
     const toggleCardExpansion = (uuid: string) => {
@@ -233,15 +260,27 @@ export function Accounts() {
                                     <span>{account.resets_at ? new Date(account.resets_at).toLocaleString('zh-CN') : '-'}</span>
                                 </div>
                             </div>
-                            <div className='flex gap-2 pt-2'>
-                                <Button size='sm' variant='outline' className='flex-1' onClick={() => handleEdit(account)}>
-                                    <Pencil className='mr-2 h-4 w-4' />
-                                    编辑
-                                </Button>
+                            <div className='flex flex-col gap-2 pt-2'>
+                                <div className='flex gap-2'>
+                                    <Button 
+                                        size='sm' 
+                                        variant='outline' 
+                                        className='flex-1' 
+                                        onClick={() => handleTest(account.organization_uuid)}
+                                        disabled={testingAccount === account.organization_uuid}
+                                    >
+                                        <TestTube className='mr-2 h-4 w-4' />
+                                        {testingAccount === account.organization_uuid ? '测试中...' : '测试'}
+                                    </Button>
+                                    <Button size='sm' variant='outline' className='flex-1' onClick={() => handleEdit(account)}>
+                                        <Pencil className='mr-2 h-4 w-4' />
+                                        编辑
+                                    </Button>
+                                </div>
                                 <Button
                                     size='sm'
                                     variant='outline'
-                                    className='flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground'
+                                    className='w-full text-destructive hover:bg-destructive hover:text-destructive-foreground'
                                     onClick={() => {
                                         setAccountToDelete(account.organization_uuid)
                                         setDeleteDialogOpen(true)
@@ -471,12 +510,24 @@ export function Accounts() {
                                         <TableCell className='text-right'>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
+                                                    <Button 
+                                                        variant='ghost' 
+                                                        size='sm' 
+                                                        className='h-8 w-8 p-0'
+                                                        disabled={testingAccount === account.organization_uuid}
+                                                    >
                                                         <span className='sr-only'>打开菜单</span>
                                                         <MoreHorizontal className='h-4 w-4' />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align='end'>
+                                                    <DropdownMenuItem 
+                                                        onClick={() => handleTest(account.organization_uuid)}
+                                                        disabled={testingAccount === account.organization_uuid}
+                                                    >
+                                                        <TestTube className='mr-2 h-4 w-4' />
+                                                        {testingAccount === account.organization_uuid ? '测试中...' : '测试连接'}
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => handleEdit(account)}>
                                                         <Pencil className='mr-2 h-4 w-4' />
                                                         编辑

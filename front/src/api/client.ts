@@ -4,6 +4,7 @@ import type {
     AccountResponse,
     AccountCreate,
     AccountUpdate,
+    AccountTestResponse,
     OAuthCodeExchange,
     SettingsRead,
     SettingsUpdate,
@@ -61,6 +62,7 @@ export const accountsApi = {
     delete: (organizationUuid: string) => api.delete(`/api/admin/accounts/${organizationUuid}`),
     exchangeOAuthCode: (exchangeData: OAuthCodeExchange) =>
         api.post<AccountResponse>('/api/admin/accounts/oauth/exchange', exchangeData),
+    test: (organizationUuid: string) => api.post<AccountTestResponse>(`/api/admin/accounts/${organizationUuid}/test`),
 }
 
 // 设置相关 API

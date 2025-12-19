@@ -219,3 +219,33 @@ async def exchange_oauth_code(exchange_data: OAuthCodeExchange, _: AdminAuthDep)
     )
 
     return get_account_response(account.organization_uuid, account)
+
+
+class AccountTestResponse(BaseModel):
+    success: bool
+    cookie_valid: Optional[bool] = None
+    oauth_valid: Optional[bool] = None
+    error: Optional[str] = None
+    account: Optional[AccountResponse] = None
+
+
+@router.post("/{organization_uuid}/test", response_model=AccountTestResponse)
+async def test_account(organization_uuid: str, _: AdminAuthDep):
+    """Test an account's credentials to verify they are still valid."""
+    if organization_uuid not in account_manager._accounts:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    # Run the test
+    test_results = await account_manager.test_account(organization_uuid)
+
+    # Get updated account info
+    account = account_manager._accounts[organization_uuid]
+    account_response = get_account_response(organization_uuid, account)
+
+    return AccountTestResponse(
+        success=test_results["success"],
+        cookie_valid=test_results.get("cookie_valid"),
+        oauth_valid=test_results.get("oauth_valid"),
+        error=test_results.get("error"),
+        account=account_response,
+    )

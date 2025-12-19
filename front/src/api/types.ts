@@ -40,6 +40,14 @@ export interface AccountResponse {
   assigned_proxy?: string; // Assigned proxy (masked)
 }
 
+export interface AccountTestResponse {
+  success: boolean;
+  cookie_valid?: boolean | null;
+  oauth_valid?: boolean | null;
+  error?: string | null;
+  account?: AccountResponse;
+}
+
 // 设置相关类型
 // 代理相关类型
 export interface ProxyCreate {
