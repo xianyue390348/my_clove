@@ -50,7 +50,7 @@ CONVERSATION_LOG_RETENTION_DAYS=7
   "timestamp": "2025-12-22T13:24:46.789Z",
   "session_id": "session_1703257486789",
   "conversation_id": "conv-abc123xyz",
-  "account_email": "user@example.com",
+  "account_id": "org-uuid-123",
   "duration_ms": 1234,
   "status": "success",
   "is_streaming": true
@@ -144,12 +144,12 @@ CONVERSATION_LOG_RETENTION_DAYS=7
 
 ### 成功对话
 ```json
-{"log_id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","timestamp":"2025-12-22T13:24:46.789Z","session_id":"session_1703257486789","conversation_id":"conv-abc123","account_email":"user@example.com","duration_ms":1234,"status":"success","is_streaming":true,"client_request":{"model":"claude-3-5-sonnet-20241022","max_tokens":4096,"messages":[{"role":"user","content":"Hello"}]},"claude_web_request":{"model":"claude-3-5-sonnet-20241022","attachments":[{"extracted_content":"Hello","file_name":"paste.txt"}]},"collected_message":{"id":"msg_01ABC","role":"assistant","content":[{"type":"text","text":"Hello! How can I help?"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":15}}}
+{"log_id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","timestamp":"2025-12-22T13:24:46.789Z","session_id":"session_1703257486789","conversation_id":"conv-abc123","account_id":"org-uuid-123","duration_ms":1234,"status":"success","is_streaming":true,"client_request":{"model":"claude-3-5-sonnet-20241022","max_tokens":4096,"messages":[{"role":"user","content":"Hello"}]},"claude_web_request":{"model":"claude-3-5-sonnet-20241022","attachments":[{"extracted_content":"Hello","file_name":"paste.txt"}]},"collected_message":{"id":"msg_01ABC","role":"assistant","content":[{"type":"text","text":"Hello! How can I help?"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":15}}}
 ```
 
 ### 错误对话
 ```json
-{"log_id":"x9y8z7w6-v5u4-3210-dcba-fe9876543210","timestamp":"2025-12-22T13:30:15.123Z","session_id":"session_1703257815123","conversation_id":null,"account_email":"user@example.com","duration_ms":5678,"status":"error","is_streaming":true,"client_request":{"model":"claude-3-5-sonnet-20241022","messages":[...]},"claude_web_request":{...},"error":{"type":"ConnectionError","message":"Failed to connect to Claude.ai"}}
+{"log_id":"x9y8z7w6-v5u4-3210-dcba-fe9876543210","timestamp":"2025-12-22T13:30:15.123Z","session_id":"session_1703257815123","conversation_id":null,"account_id":"org-uuid-123","duration_ms":5678,"status":"error","is_streaming":true,"client_request":{"model":"claude-3-5-sonnet-20241022","messages":[...]},"claude_web_request":{...},"error":{"type":"ConnectionError","message":"Failed to connect to Claude.ai"}}
 ```
 
 ## 查询日志
@@ -235,7 +235,7 @@ docker-compose restart
 ### 保留内容
 - ✅ 文本消息内容（用于调试）
 - ✅ Session ID / Conversation ID（用于关联）
-- ✅ 账户邮箱（用于追踪）
+- ✅ 账户 UUID（用于追踪）
 - ✅ 模型和参数信息
 
 ### 访问控制建议

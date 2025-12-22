@@ -71,17 +71,9 @@ class ConversationLoggingProcessor(BaseProcessor):
 
         # 基础元数据
         log_data = {
-            "session_id": (
-                context.claude_session.session_id if context.claude_session else None
-            ),
-            "conversation_id": (
-                context.claude_session.conv_uuid if context.claude_session else None
-            ),
-            "account_email": (
-                context.claude_session.account.email
-                if context.claude_session and hasattr(context.claude_session, "account")
-                else None
-            ),
+            "session_id": None,
+            "conversation_id": None,
+            "account_id": None,
             "duration_ms": duration_ms,
             "status": "success" if context.response else "error",
             "is_streaming": (
@@ -90,6 +82,26 @@ class ConversationLoggingProcessor(BaseProcessor):
                 else False
             ),
         }
+
+        # 安全地获取 session 相关信息
+        if context.claude_session:
+            try:
+                log_data["session_id"] = getattr(
+                    context.claude_session, "session_id", None
+                )
+                log_data["conversation_id"] = getattr(
+                    context.claude_session, "conv_uuid", None
+                )
+
+                # 安全地获取 account 信息
+                if hasattr(context.claude_session, "account"):
+                    account = context.claude_session.account
+                    if account:
+                        log_data["account_id"] = getattr(
+                            account, "organization_uuid", None
+                        )
+            except Exception as e:
+                logger.warning(f"Failed to extract session info: {e}")
 
         # 客户端请求（脱敏处理）
         if context.messages_api_request:
