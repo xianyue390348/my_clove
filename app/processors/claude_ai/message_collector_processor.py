@@ -14,6 +14,7 @@ from app.models.streaming import (
     MessageDeltaEvent,
     MessageStopEvent,
     ErrorEvent,
+    ErrorInfo,
     TextDelta,
     InputJsonDelta,
     ThinkingDelta,
@@ -94,40 +95,48 @@ class MessageCollectorProcessor(BaseProcessor):
                     )
 
             elif isinstance(event.root, ContentBlockStopEvent):
-                block = context.collected_message.content[event.root.index]
-                if isinstance(block, (ToolUseContent, ServerToolUseContent)):
-                    if hasattr(block, "input_json") and block.input_json:
-                        try:
-                            block.input = json5.loads(block.input_json)
-                        except (ValueError, json5.JSON5DecodeError) as e:
-                            logger.warning(f"Failed to parse input_json with json5: {e}, falling back to json")
+                # Boundary checking to prevent IndexError caused by refusal responses
+                if (
+                    context.collected_message
+                    and event.root.index < len(context.collected_message.content)
+                ):
+                    block = context.collected_message.content[event.root.index]
+                    if isinstance(block, (ToolUseContent, ServerToolUseContent)):
+                        if hasattr(block, "input_json") and block.input_json:
                             try:
-                                import json
-                                block.input = json.loads(block.input_json)
-                            except json.JSONDecodeError as je:
-                                logger.error(f"Failed to parse input_json with both json5 and json: {je}")
-                                block.input = {"error": "Failed to parse input", "raw": block.input_json}
-                        del block.input_json
-                if isinstance(block, ToolResultContent):
-                    if hasattr(block, "content_json") and block.content_json:
-                        try:
-                            content = json5.loads(block.content_json)
-                        except (ValueError, json5.JSON5DecodeError) as e:
-                            logger.warning(f"Failed to parse content_json with json5: {e}, falling back to json")
+                                block.input = json5.loads(block.input_json)
+                            except (ValueError, json5.JSON5DecodeError) as e:
+                                logger.warning(f"Failed to parse input_json with json5: {e}, falling back to json")
+                                try:
+                                    import json
+                                    block.input = json.loads(block.input_json)
+                                except json.JSONDecodeError as je:
+                                    logger.error(f"Failed to parse input_json with both json5 and json: {je}")
+                                    block.input = {"error": "Failed to parse input", "raw": block.input_json}
+                            del block.input_json
+                    if isinstance(block, ToolResultContent):
+                        if hasattr(block, "content_json") and block.content_json:
                             try:
-                                import json
-                                content = json.loads(block.content_json)
-                            except json.JSONDecodeError as je:
-                                logger.error(f"Failed to parse content_json with both json5 and json: {je}")
-                                content = {"error": "Failed to parse content", "raw": block.content_json}
-                        block = ToolResultContent(
-                            **block.model_dump(exclude={"content"}),
-                            content=content,
-                        )
-                        del block.content_json
-                        context.collected_message.content[event.root.index] = block
-
-                logger.debug(f"Content block {event.root.index} stopped")
+                                content = json5.loads(block.content_json)
+                            except (ValueError, json5.JSON5DecodeError) as e:
+                                logger.warning(f"Failed to parse content_json with json5: {e}, falling back to json")
+                                try:
+                                    import json
+                                    content = json.loads(block.content_json)
+                                except json.JSONDecodeError as je:
+                                    logger.error(f"Failed to parse content_json with both json5 and json: {je}")
+                                    content = {"error": "Failed to parse content", "raw": block.content_json}
+                            block = ToolResultContent(
+                                **block.model_dump(exclude={"content"}),
+                                content=content,
+                            )
+                            del block.content_json
+                            context.collected_message.content[event.root.index] = block
+                    logger.debug(f"Content block {event.root.index} stopped")
+                else:
+                    logger.debug(
+                        f"Content block {event.root.index} stop skipped (no corresponding start)"
+                    )
 
             elif isinstance(event.root, MessageDeltaEvent):
                 if context.collected_message and event.root.delta:
@@ -135,6 +144,22 @@ class MessageCollectorProcessor(BaseProcessor):
                         context.collected_message.stop_reason = (
                             event.root.delta.stop_reason
                         )
+                        # When refusal is detected and content is empty, yield ErrorEvent
+                        if (
+                            event.root.delta.stop_reason == "refusal"
+                            and not context.collected_message.content
+                        ):
+                            logger.warning("Request refused by Claude's safety filter")
+                            error_event = StreamingEvent(
+                                root=ErrorEvent(
+                                    type="error",
+                                    error=ErrorInfo(
+                                        type="refusal",
+                                        message="Chat paused: Claude's safety filters flagged this message. This occasionally happens with normal, safe messages. Try rephrasing or using a different model."
+                                    )
+                                )
+                            )
+                            yield error_event
                     if event.root.delta.stop_sequence:
                         context.collected_message.stop_sequence = (
                             event.root.delta.stop_sequence
