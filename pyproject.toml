@@ -20,6 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+    "aiofiles>=24.1.0",
     "fastapi>=0.115.14",
     "httpx>=0.28.1",
     "json5>=0.12.0",
