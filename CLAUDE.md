@@ -8,6 +8,8 @@ Clove is a Claude.ai reverse proxy that allows access to Claude through standard
 - **OAuth mode**: Primary mode using Claude's official API with full functionality
 - **Web reverse proxy mode**: Fallback mode simulating Claude.ai web interface
 
+**IMPORTANT**: This project currently **ONLY uses the Web reverse proxy mode** (claude-web-api processing flow). The OAuth API mode is not enabled or configured in this deployment.
+
 ## Development Commands
 
 ### Backend (Python/FastAPI)
