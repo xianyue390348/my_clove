@@ -1,5 +1,13 @@
 from fastapi import APIRouter
-from app.api.routes import claude, claude_extra, accounts, settings, statistics, proxies
+from app.api.routes import (
+    claude,
+    claude_extra,
+    accounts,
+    settings,
+    statistics,
+    proxies,
+    conversation_logs,
+)
 
 api_router = APIRouter()
 
@@ -21,4 +29,9 @@ api_router.include_router(
 )
 api_router.include_router(
     proxies.router, prefix="/api/admin/proxies", tags=["Proxy Pool Management"]
+)
+api_router.include_router(
+    conversation_logs.router,
+    prefix="/api/admin/conversation-logs",
+    tags=["Conversation Logs"],
 )

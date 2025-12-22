@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Accounts } from './pages/Accounts'
 import { Settings } from './pages/Settings'
 import { Proxies } from './pages/Proxies'
+import { ConversationLogs } from './pages/ConversationLogs'
 import { Toaster } from './components/ui/sonner'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,7 @@ function App() {
                     <Route index element={<Dashboard />} />
                     <Route path='accounts' element={<Accounts />} />
                     <Route path='proxies' element={<Proxies />} />
+                    <Route path='logs' element={<ConversationLogs />} />
                     <Route path='settings' element={<Settings />} />
                 </Route>
             </Routes>

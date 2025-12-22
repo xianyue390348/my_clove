@@ -124,3 +124,27 @@ export interface StatisticsResponse {
   status: 'healthy' | 'degraded';
   accounts: AccountStats;
 }
+
+// 对话日志相关类型
+export interface ConversationLog {
+  log_id: string;
+  timestamp: string;
+  session_id: string | null;
+  conversation_id: string | null;
+  account_id: string | null;
+  duration_ms: number;
+  status: 'success' | 'error';
+  is_streaming: boolean;
+  client_request?: Record<string, any>;
+  claude_web_request?: Record<string, any>;
+  collected_message?: Record<string, any>;
+  error?: {
+    type: string;
+    message: string;
+  };
+}
+
+export interface ConversationLogsListResponse {
+  total: number;
+  logs: ConversationLog[];
+}
