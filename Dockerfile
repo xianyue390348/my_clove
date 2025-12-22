@@ -38,11 +38,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies (without installing the project itself)
-# --locked: Use lockfile for consistency
 # --no-install-project: Only install dependencies, not the project
 # --no-dev: Skip dev dependencies
 # --extra rnet --extra curl: Install optional dependency groups
-RUN uv sync --locked --no-install-project --no-dev --extra rnet --extra curl
+RUN uv sync --no-install-project --no-dev --extra rnet --extra curl
 
 # Step 2: Copy application code and README.md (required by pyproject.toml)
 COPY app/ ./app/
@@ -52,7 +51,7 @@ COPY README.md ./
 COPY --from=frontend-builder /app/front/dist ./app/static
 
 # Step 4: Install the project itself
-RUN uv sync --locked --no-dev --extra rnet --extra curl
+RUN uv sync --no-dev --extra rnet --extra curl
 
 # Create data directory
 RUN mkdir -p /data
