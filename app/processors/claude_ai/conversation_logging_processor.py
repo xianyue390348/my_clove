@@ -75,12 +75,12 @@ class ConversationLoggingProcessor(BaseProcessor):
                 context.claude_session.session_id if context.claude_session else None
             ),
             "conversation_id": (
-                context.claude_session.conversation_id
-                if context.claude_session
-                else None
+                context.claude_session.conv_uuid if context.claude_session else None
             ),
             "account_email": (
-                context.claude_session.account.email if context.claude_session else None
+                context.claude_session.account.email
+                if context.claude_session and hasattr(context.claude_session, "account")
+                else None
             ),
             "duration_ms": duration_ms,
             "status": "success" if context.response else "error",
