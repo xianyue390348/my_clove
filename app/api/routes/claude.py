@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from tenacity import (
@@ -33,6 +34,9 @@ async def create_message(
         original_request=request,
         messages_api_request=messages_request,
     )
+    
+    # 记录开始时间用于计算耗时
+    context.metadata["start_time"] = time.time()
 
     context = await ClaudeAIPipeline().process(context)
 

@@ -266,6 +266,30 @@ class Settings(BaseSettings):
         description="Comma-separated list of models that require max plan accounts",
     )
 
+    # Conversation logging settings
+    enable_conversation_logging: bool = Field(
+        default=True,
+        env="ENABLE_CONVERSATION_LOGGING",
+        description="Enable conversation logging for debugging",
+    )
+    conversation_log_dir: Optional[Path] = Field(
+        default=None,
+        env="CONVERSATION_LOG_DIR",
+        description="Directory for conversation logs (defaults to DATA_FOLDER/logs/conversations)",
+    )
+    conversation_log_retention_days: int = Field(
+        default=30,
+        env="CONVERSATION_LOG_RETENTION_DAYS",
+        description="Number of days to keep conversation logs",
+    )
+
+    @property
+    def conversation_log_path(self) -> Path:
+        """获取对话日志目录"""
+        if self.conversation_log_dir:
+            return self.conversation_log_dir
+        return self.data_folder / "logs" / "conversations"
+
     @field_validator(
         "api_keys", "admin_api_keys", "cookies", "max_models", "pad_tokens", "proxy_pool"
     )

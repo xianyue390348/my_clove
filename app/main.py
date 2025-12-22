@@ -13,6 +13,10 @@ from app.services.account import account_manager
 from app.services.session import session_manager
 from app.services.tool_call import tool_call_manager
 from app.services.cache import cache_service
+from app.services.conversation_logger import (
+    init_conversation_logger,
+    get_conversation_logger,
+)
 
 
 @asynccontextmanager
@@ -21,6 +25,16 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Clove...")
 
     configure_logger()
+
+    # Initialize conversation logger
+    if settings.enable_conversation_logging:
+        init_conversation_logger(
+            log_dir=settings.conversation_log_path,
+            retention_days=settings.conversation_log_retention_days,
+        )
+        logger.info("Conversation logging enabled")
+    else:
+        logger.info("Conversation logging disabled")
 
     # Load accounts
     account_manager.load_accounts()
@@ -33,6 +47,12 @@ async def lifespan(app: FastAPI):
     await session_manager.start_cleanup_task()
     await tool_call_manager.start_cleanup_task()
     await cache_service.start_cleanup_task()
+    
+    # Start conversation log cleanup task
+    if settings.enable_conversation_logging:
+        conversation_logger = get_conversation_logger()
+        if conversation_logger:
+            await conversation_logger.start_cleanup_task()
 
     yield
 
@@ -46,6 +66,12 @@ async def lifespan(app: FastAPI):
     await session_manager.cleanup_all()
     await tool_call_manager.cleanup_all()
     await cache_service.cleanup_all()
+    
+    # Stop conversation log cleanup task
+    if settings.enable_conversation_logging:
+        conversation_logger = get_conversation_logger()
+        if conversation_logger:
+            await conversation_logger.stop_cleanup_task()
 
 
 app = FastAPI(
