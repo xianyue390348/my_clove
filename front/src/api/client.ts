@@ -12,8 +12,6 @@ import type {
     ProxyCreate,
     ProxyResponse,
     ProxyTestResult,
-    ConversationLog,
-    ConversationLogsListResponse,
 } from './types'
 
 const api = axios.create({
@@ -89,18 +87,4 @@ export const proxiesApi = {
     create: (proxy: ProxyCreate) => api.post<ProxyResponse>('/api/admin/proxies', proxy),
     delete: (index: number) => api.delete(`/api/admin/proxies/${index}`),
     test: (index: number) => api.post<ProxyTestResult>(`/api/admin/proxies/${index}/test`),
-}
-
-// 对话日志相关 API
-export const conversationLogsApi = {
-    list: (params?: {
-        start_date?: string
-        end_date?: string
-        session_id?: string
-        status?: 'success' | 'error'
-        limit?: number
-        offset?: number
-    }) => api.get<ConversationLogsListResponse>('/api/admin/conversation-logs', { params }),
-    get: (logId: string) => api.get<ConversationLog>(`/api/admin/conversation-logs/${logId}`),
-    cleanup: () => api.delete('/api/admin/conversation-logs'),
 }
