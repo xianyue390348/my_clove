@@ -414,6 +414,13 @@ class AccountManager:
         Uses stable ordering by organization_uuid to ensure consistent proxy assignment.
         Falls back to global proxy_url if no proxy pool is configured.
 
+        "No proxy" (None) is treated as a proxy option and distributed evenly.
+        Example: With 3 proxies and 8 accounts, distribution is:
+        - Accounts 0,4: proxy[0]
+        - Accounts 1,5: proxy[1]
+        - Accounts 2,6: proxy[2]
+        - Accounts 3,7: no proxy (None)
+
         Args:
             organization_uuid: The organization UUID of the account
 
@@ -434,13 +441,18 @@ class AccountManager:
             )
             return settings.proxy_url
 
-        # Modulo assignment
-        proxy_index = account_index % len(settings.proxy_pool)
-        assigned_proxy = settings.proxy_pool[proxy_index]
+        # Build effective proxy pool: proxy_pool + [None]
+        # "No proxy" (None) is treated as a proxy option
+        effective_pool = list(settings.proxy_pool) + [None]
+
+        # Modulo assignment across the effective pool
+        proxy_index = account_index % len(effective_pool)
+        assigned_proxy = effective_pool[proxy_index]
 
         logger.debug(
-            f"Assigned proxy {proxy_index} to account {organization_uuid[:8]}... "
-            f"(account_index={account_index}, pool_size={len(settings.proxy_pool)})"
+            f"Assigned {'no proxy' if assigned_proxy is None else f'proxy {proxy_index}'} "
+            f"to account {organization_uuid[:8]}... "
+            f"(account_index={account_index}, effective_pool_size={len(effective_pool)})"
         )
 
         return assigned_proxy
