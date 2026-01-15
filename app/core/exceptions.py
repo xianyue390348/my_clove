@@ -256,9 +256,9 @@ class ClaudeStreamingError(AppError):
             "error_message": error_message,
         })
         super().__init__(
-            error_code=503500,
-            message_key="processors.nonStreamingResponseProcessor.streamingError",
-            status_code=503,
+            error_code=429500,
+            message_key="processors.streamingResponseProcessor.streamingError",
+            status_code=429,
             context=_context,
             retryable=True,
         )
