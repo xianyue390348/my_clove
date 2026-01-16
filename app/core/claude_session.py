@@ -52,25 +52,22 @@ class ClaudeWebSession:
 
                 # Send error event to client instead of raising exception
                 # This prevents "response already started" error
-                # Use overloaded_error type so IDE/clients will auto-retry
-                timeout_type = app_error.context.get('timeout_type', 'connection')
                 error_event = {
                     "type": "error",
                     "error": {
-                        "type": "overloaded_error",
-                        "message": f"Network error: {timeout_type} timeout"
+                        "type": "network_error",
+                        "message": f"Network error: {app_error.context.get('timeout_type', 'connection')} timeout"
                     }
                 }
                 yield f"event: error\n"
                 yield f"data: {json.dumps(error_event)}\n\n"
             else:
                 # For non-network errors, log and send generic error
-                # Use overloaded_error type so IDE/clients will auto-retry
                 logger.error(f"Unexpected error during stream: {e}")
                 error_event = {
                     "type": "error",
                     "error": {
-                        "type": "overloaded_error",
+                        "type": "stream_error",
                         "message": "An error occurred while streaming the response"
                     }
                 }
